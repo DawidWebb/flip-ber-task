@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Order } from 'src/schemas/orderSchema';
@@ -15,125 +15,149 @@ export class OrderService {
 
   async findTop10Profitable(): Promise<ProductDto> {
 
-    const allItemsFromOredrs = await this.orderSchema.aggregate([{ $project: { items: 1, } }]).exec();
+    try {
+      const allItemsFromOredrs = await this.orderSchema.aggregate([{ $project: { items: 1, } }]).exec();
 
-    const allItemsWithValues = [];
-    allItemsFromOredrs.map(order => order.items.map(item => {
-      const chart = {
-        id: item.product.id,
-        name: item.product.name,
-        value: Number(item.product.price) * item.quantity,
-      };
-      allItemsWithValues.push(chart);
+      const allItemsWithValues = [];
+      allItemsFromOredrs.map(order => order.items.map(item => {
+        const chart = {
+          id: item.product.id,
+          name: item.product.name,
+          value: Number(item.product.price) * item.quantity,
+        };
+        allItemsWithValues.push(chart);
 
-    }));
-    const groupedProducts = allItemsWithValues.reduce((prev, next) => {
-      const element = prev.find((item: { id: any; }) => item.id === next.id);
-      if (element) {
-        return [...prev, {
-          id: next.id,
-          name: next.name,
-          value: next.value + element.value
-        }];
-      } else {
-        return [...prev, next];
-      }
+      }));
+      const groupedProducts = allItemsWithValues.reduce((prev, next) => {
+        const element = prev.find((item: { id: any; }) => item.id === next.id);
+        if (element) {
+          return [...prev, {
+            id: next.id,
+            name: next.name,
+            value: next.value + element.value
+          }];
+        } else {
+          return [...prev, next];
+        }
 
-    }, []);
+      }, []);
 
-    const top10 = groupedProducts.sort((a, b) => {
-      return b.value - a.value;
-    }).splice(0, 10);
+      const top10 = groupedProducts.sort((a, b) => {
+        return b.value - a.value;
+      }).splice(0, 10);
 
-    return top10;
+      return top10;
+    } catch (error) {
+      throw new InternalServerErrorException(`${ error.message }`);
+    }
   }
 
   async findTop10MostOftenBought(): Promise<ProductDto> {
-    const allItemsFromOredrs = await this.orderSchema.aggregate([{ $project: { items: 1, } }]).exec();
 
-    const allItems = [];
-    allItemsFromOredrs.map(order => order.items.map(item => {
-      const chart = {
-        id: item.product.id,
-        name: item.product.name,
-        value: item.product.price,
-      };
-      allItems.push(chart);
+    try {
+      const allItemsFromOredrs = await this.orderSchema.aggregate([{ $project: { items: 1, } }]).exec();
 
-    }));
-
-    const groupedProducts = allItems.reduce((prev, next) => {
-      const element = prev.find((item: { id: any; }) => item.id === next.id);
-      let counter = 1;
-      if (element) {
-        return [...prev, {
-          id: next.id,
-          name: next.name,
-          value: counter = counter + 1,
-        }];
-      } else {
-        return [...prev, {
-          id: next.id,
-          name: next.name,
-          value: counter,
-        }];
+      if (!allItemsFromOredrs.length) {
+        throw new NotFoundException("There is no data found!");
       }
 
-    }, []);
+      const allItems = [];
+      allItemsFromOredrs.map(order => order.items.map(item => {
+        const chart = {
+          id: item.product.id,
+          name: item.product.name,
+          value: item.product.price,
+        };
+        allItems.push(chart);
 
-    const top10 = groupedProducts.sort((a, b) => {
-      return b.value - a.value;
-    }).splice(0, 10);
+      }));
 
-    return top10;
+      const groupedProducts = allItems.reduce((prev, next) => {
+        const element = prev.find((item: { id: any; }) => item.id === next.id);
+        let counter = 1;
+        if (element) {
+          return [...prev, {
+            id: next.id,
+            name: next.name,
+            value: counter = counter + 1,
+          }];
+        } else {
+          return [...prev, {
+            id: next.id,
+            name: next.name,
+            value: counter,
+          }];
+        }
+
+      }, []);
+
+      const top10 = groupedProducts.sort((a, b) => {
+        return b.value - a.value;
+      }).splice(0, 10);
+
+      return top10;
+    } catch (error) {
+      throw new InternalServerErrorException(`${ error.message }`);
+    }
   }
 
   async findTop10MostOftenBoughtFromYestrd(): Promise<ProductDto> {
-    const today = new Date();
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    try {
+      const today = new Date();
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
 
-    const allItemsFromOredrs = await this.orderSchema.find(
-      { "date": { $lte: `${ yesterday }` } },
-      { items: 1 },
-    ).exec();
+      const allItemsFromOredrs = await this.orderSchema.find(
+        { "date": { $gte: `${ yesterday }` } },
+        { items: 1 },
+      ).exec();
 
-    const allItems = [];
-    allItemsFromOredrs.map(order => order.items.map(item => {
-      const chart = {
-        id: item.product.id,
-        name: item.product.name,
-        value: item.product.price,
-      };
-      allItems.push(chart);
-
-    }));
-
-    const groupedProducts = allItems.reduce((prev, next) => {
-      const element = prev.find((item: { id: any; }) => item.id === next.id);
-      let counter = 1;
-      if (element) {
-        return [...prev, {
-          id: next.id,
-          name: next.name,
-          value: counter = counter + 1,
-        }];
-      } else {
-        return [...prev, {
-          id: next.id,
-          name: next.name,
-          value: counter,
-        }];
+      if (!allItemsFromOredrs.length) {
+        throw new NotFoundException("There is no data found!");
       }
 
-    }, []);
+      if (!allItemsFromOredrs.length) {
+        throw new NotFoundException("There is no data found!");
+      }
 
-    const top10 = groupedProducts.sort((a, b) => {
-      return b.value - a.value;
-    }).splice(0, 10);
+      const allItems = [];
+      allItemsFromOredrs.map(order => order.items.map(item => {
+        const chart = {
+          id: item.product.id,
+          name: item.product.name,
+          value: item.product.price,
+        };
+        allItems.push(chart);
 
-    return top10;
+      }));
 
-    return;
+      const groupedProducts = allItems.reduce((prev, next) => {
+        const element = prev.find((item: { id: any; }) => item.id === next.id);
+        let counter = 1;
+        if (element) {
+          return [...prev, {
+            id: next.id,
+            name: next.name,
+            value: counter = counter + 1,
+          }];
+        } else {
+          return [...prev, {
+            id: next.id,
+            name: next.name,
+            value: counter,
+          }];
+        }
+
+      }, []);
+
+      const top10 = groupedProducts.sort((a, b) => {
+        return b.value - a.value;
+      }).splice(0, 10);
+
+      return top10;
+    }
+    catch (error) {
+      throw new InternalServerErrorException(`${ error.message }`);
+    }
+
   }
-
 }

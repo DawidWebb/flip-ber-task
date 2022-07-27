@@ -87,4 +87,53 @@ export class OrderService {
 
     return top10;
   }
+
+  async findTop10MostOftenBoughtFromYestrd(): Promise<ProductDto> {
+    const today = new Date();
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+    const allItemsFromOredrs = await this.orderSchema.find(
+      { "date": { $lte: `${ yesterday }` } },
+      { items: 1 },
+    ).exec();
+
+    const allItems = [];
+    allItemsFromOredrs.map(order => order.items.map(item => {
+      const chart = {
+        id: item.product.id,
+        name: item.product.name,
+        value: item.product.price,
+      };
+      allItems.push(chart);
+
+    }));
+
+    const groupedProducts = allItems.reduce((prev, next) => {
+      const element = prev.find((item: { id: any; }) => item.id === next.id);
+      let counter = 1;
+      if (element) {
+        return [...prev, {
+          id: next.id,
+          name: next.name,
+          value: counter = counter + 1,
+        }];
+      } else {
+        return [...prev, {
+          id: next.id,
+          name: next.name,
+          value: counter,
+        }];
+      }
+
+    }, []);
+
+    const top10 = groupedProducts.sort((a, b) => {
+      return b.value - a.value;
+    }).splice(0, 10);
+
+    return top10;
+
+    return;
+  }
+
 }

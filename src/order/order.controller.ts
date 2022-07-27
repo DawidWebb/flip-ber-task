@@ -13,9 +13,14 @@ export class OrderController {
   }
 
   @Get('/top-ten-most-often-bought')
-  findAll() {
+  findTop10MostOftenBought() {
     return this.orderService.findTop10MostOftenBought();
   }
 
+
+  @Get('/top-ten-most-often-bought-from-yestrd')
+  findTop10MostOftenBoughtFromYestrd() {
+    return this.orderService.findTop10MostOftenBoughtFromYestrd();
+  }
 
 }

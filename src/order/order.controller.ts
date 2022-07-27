@@ -1,7 +1,6 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { OrderService } from './order.service';
-import { OrderDto } from './dto/order.dto';
 
 
 @Controller('order')
@@ -13,14 +12,10 @@ export class OrderController {
     return this.orderService.findTop10Profitable();
   }
 
-  @Get()
+  @Get('/top-ten-most-often-bought')
   findAll() {
-    return this.orderService.findAll();
+    return this.orderService.findTop10MostOftenBought();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.orderService.findOne(id);
-  }
 
 }

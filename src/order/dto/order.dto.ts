@@ -1,5 +1,4 @@
 /* eslint-disable prettier/prettier */
-import { Date } from "mongoose";
 import { CustomerDto } from "../../customer/dto/customer.dto";
 import { ItemDto } from "../../item/dto/item.dto";
 

@@ -8,7 +8,10 @@ import { OrderDto } from './dto/order.dto';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-
+  @Get('/top-ten-profitable')
+  findTop10Profitable() {
+    return this.orderService.findTop10Profitable();
+  }
 
   @Get()
   findAll() {
